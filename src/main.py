@@ -1,3 +1,6 @@
+import ollama
+import openai
+
 def main():
     print("Hello from ev-charging-sim!")
 

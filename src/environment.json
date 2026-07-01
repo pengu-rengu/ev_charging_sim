@@ -1,0 +1,27 @@
+{
+  "home": [
+    {"to": "office", "distance": 10, "travel_time": 20},
+    {"to": "campus", "distance": 5, "travel_time": 12}
+  ],
+  "office": [
+    {"to": "home", "distance": 10, "travel_time": 20},
+    {"to": "shopping_mall", "distance": 3, "travel_time": 8},
+    {"to": "public_charger", "distance": 1, "travel_time": 4}
+  ],
+  "campus": [
+    {"to": "home", "distance": 5, "travel_time": 12}
+  ],
+  "shopping_mall": [
+    {"to": "office", "distance": 3, "travel_time": 8},
+    {"to": "public_charger", "distance": 2, "travel_time": 5},
+    {"to": "restaurant", "distance": 1, "travel_time": 4}
+  ],
+  "public_charger": [
+    {"to": "office", "distance": 1, "travel_time": 4},
+    {"to": "shopping_mall", "distance": 2, "travel_time": 5}
+  ],
+  "restaurant": [
+    {"to": "shopping_mall", "distance": 1, "travel_time": 4}
+  ],
+  "gym": []
+}

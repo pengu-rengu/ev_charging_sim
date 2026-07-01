@@ -1,13 +1,11 @@
 import re
 import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, "src")
 
 from prompt import (
-    CHARGING_PROMPT_DIR,
-    MOBILITY_PROMPT_PATHS,
     SYSTEM_PROMPT_INTRO,
+    ChargingArchetype,
     MobilityArchetype,
     load_system_prompt
 )
@@ -27,19 +25,56 @@ FORBIDDEN_MOBILITY_PATTERNS: list[str] = [
     r"\bdc\b"
 ]
 
+FORBIDDEN_MOBILITY_DAY_PATTERNS: list[str] = [
+    r"\bweekday\b",
+    r"\bweekdays\b",
+    r"\bweekend\b",
+    r"\bweekends\b"
+]
 
-def test_load_system_prompt_for_every_mobility_archetype() -> None:
-    for archetype in MobilityArchetype:
-        prompt_text = load_system_prompt(archetype)
-        mobility_prompt = MOBILITY_PROMPT_PATHS[archetype].read_text().strip()
-        charging_prompt = (CHARGING_PROMPT_DIR / "placeholder.md").read_text().strip()
+CHARGING_SCORE_LABELS: list[str] = [
+    "Information Engagement",
+    "Risk Buffer Preference",
+    "Adaptive Flexibility",
+    "Cost/Effort Willingness"
+]
 
-        assert prompt_text.startswith(SYSTEM_PROMPT_INTRO)
-        assert "## Mobility Archetype" in prompt_text
-        assert "## Charging Archetype" in prompt_text
-        assert mobility_prompt in prompt_text
-        assert charging_prompt in prompt_text
-        assert archetype.value in prompt_text
+
+def read_prompt(file_path: str) -> str:
+    with open(file_path) as file:
+        return file.read().strip()
+
+
+def mobility_prompt_file(mobility_archetype: MobilityArchetype) -> str:
+    return f"archetypes/mobility/{mobility_archetype.name.lower()}.md"
+
+
+def charging_prompt_file(charging_archetype: ChargingArchetype) -> str:
+    return f"archetypes/charging/{charging_archetype.name.lower()}.md"
+
+
+def test_load_system_prompt_for_every_archetype_pair() -> None:
+    for mobility_archetype in MobilityArchetype:
+        for charging_archetype in ChargingArchetype:
+            prompt_text = load_system_prompt(mobility_archetype, charging_archetype)
+            mobility_prompt = read_prompt(mobility_prompt_file(mobility_archetype))
+            charging_prompt = read_prompt(charging_prompt_file(charging_archetype))
+
+            assert prompt_text.startswith(SYSTEM_PROMPT_INTRO)
+            assert "## Mobility Archetype" in prompt_text
+            assert "## Charging Archetype" in prompt_text
+            assert mobility_prompt in prompt_text
+            assert charging_prompt in prompt_text
+            assert mobility_archetype.value in prompt_text
+            assert charging_archetype.value in prompt_text
+
+
+def test_load_system_prompt_requires_charging_archetype() -> None:
+    try:
+        load_system_prompt(MobilityArchetype.NON_COMMUTER)
+        raise AssertionError("expected TypeError")
+    except TypeError as error:
+        assert "charging_archetype" in str(error)
 
 
 def test_unknown_charging_archetype_raises_file_not_found() -> None:
@@ -51,7 +86,22 @@ def test_unknown_charging_archetype_raises_file_not_found() -> None:
 
 
 def test_mobility_prompts_do_not_include_charging_behavior() -> None:
-    for path in MOBILITY_PROMPT_PATHS.values():
-        text = path.read_text().lower()
+    for mobility_archetype in MobilityArchetype:
+        text = read_prompt(mobility_prompt_file(mobility_archetype)).lower()
         for forbidden_pattern in FORBIDDEN_MOBILITY_PATTERNS:
             assert re.search(forbidden_pattern, text) is None
+
+
+def test_mobility_prompts_do_not_include_day_type_terms() -> None:
+    for mobility_archetype in MobilityArchetype:
+        text = read_prompt(mobility_prompt_file(mobility_archetype)).lower()
+        for forbidden_pattern in FORBIDDEN_MOBILITY_DAY_PATTERNS:
+            assert re.search(forbidden_pattern, text) is None
+
+
+def test_charging_prompts_include_score_dimensions() -> None:
+    for charging_archetype in ChargingArchetype:
+        text = read_prompt(charging_prompt_file(charging_archetype))
+        assert charging_archetype.value in text
+        for score_label in CHARGING_SCORE_LABELS:
+            assert score_label in text
